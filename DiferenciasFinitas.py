@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import cm
 
 def DiferenciasFinitas(a ,b ,c ,d ,m ,n ,TOL ,MAX_iter):
     if (m < 3 or n < 3):
@@ -86,11 +88,13 @@ def DiferenciasFinitas(a ,b ,c ,d ,m ,n ,TOL ,MAX_iter):
             for i in range(n-1):
                 for j in range(m-1):
                     print(f"x={x[i]:.4f}, y={y[j]:.4f}, w={w[i][j]:.6f}")
-            return w
+            return w,x,y #esto es unicamente para graficar luego
         
         l+= 1
 
     print("Numero maximo de iiteraciones excedido!!")
+
+    return None, None, None #esto es unicamente para graficar luego
 
 def f(x, y):
     return -(np.cos(x +y) + np.cos(x -y))
@@ -104,7 +108,61 @@ def g(x, y):
         return -np.cos(y)
     elif np.isclose(y, np.pi/2):
         return 0
+    
+def u_analitica(x, y):
+    return np.cos(x) * np.cos(y)
+
+def graficar(a, b, c, d, m, n, TOL, MAX_iter):
+    w, x_int, y_int = DiferenciasFinitas(a, b, c, d, m, n, TOL, MAX_iter)
+    if w is None:
+        return
+
+    # Construir malla completa incluyendo frontera
+    x_full = np.array([a] + x_int + [b])
+    y_full = np.array([c] + y_int + [d])
+    X, Y = np.meshgrid(x_full, y_full)
+
+    # Construir matriz W completa con frontera
+    W_full = np.zeros((len(y_full), len(x_full)))
+
+    # Rellenar frontera
+    for i, xi in enumerate(x_full):
+        W_full[0, i]  = g(xi, c)
+        W_full[-1, i] = g(xi, d)
+    for j, yj in enumerate(y_full):
+        W_full[j, 0]  = g(a, yj)
+        W_full[j, -1] = g(b, yj)
+
+    # Rellenar interiores correctamente
+    # w tiene shape (n-1, m-1), w[i][j] donde i=columna x, j=columna y
+    for i in range(n-1):
+        for j in range(m-1):
+            W_full[j+1, i+1] = w[i, j]  # w[i,j] en vez de w[i][j]
+
+    # Solución analítica sobre la malla completa
+    U_analitica = u_analitica(X, Y)
+
+    # Graficar
+    fig = plt.figure(figsize=(14, 6))
+
+    ax1 = fig.add_subplot(121, projection='3d')
+    ax1.plot_surface(X, Y, W_full, cmap=cm.viridis)
+    ax1.set_title('Aproximación (Diferencias Finitas)')
+    ax1.set_xlabel('x')
+    ax1.set_ylabel('y')
+    ax1.set_zlabel('w(x,y)')
+
+    ax2 = fig.add_subplot(122, projection='3d')
+    ax2.plot_surface(X, Y, U_analitica, cmap=cm.plasma)
+    ax2.set_title('Solución analítica u(x,y) = cos(x)cos(y)')
+    ax2.set_xlabel('x')
+    ax2.set_ylabel('y')
+    ax2.set_zlabel('u(x,y)')
+
+    plt.tight_layout()
+    plt.savefig('comparacion_poisson.png', dpi=150, bbox_inches='tight')
+    plt.show()
 
 
 
-DiferenciasFinitas(0,np.pi,0,(np.pi)/2,3,4, np.e,5)
+graficar(0, np.pi, 0, np.pi/2, 10, 20, 1e-4, 1000)
