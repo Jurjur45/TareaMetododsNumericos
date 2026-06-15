@@ -44,7 +44,7 @@ def DiferenciasFinitas(a ,b ,c ,d ,m ,n ,TOL ,MAX_iter):
         z = (-(h**2)*f(x[n-2], y[m-2]) + g(b, y[m-2]) + lambd*g(x[n-2], d) + w[n-3][m-2] + lambd*w[n-2][m-3]) / mu
         if abs(w[n-2][m-2] - z) > NORM:
             NORM = abs(w[n-2][m-2] - z)
-            w[n-2][m-2] = z
+        w[n-2][m-2] = z
 
         #Paso 10 al 13
         for j in range(m-2, 1, -1):
@@ -85,9 +85,14 @@ def DiferenciasFinitas(a ,b ,c ,d ,m ,n ,TOL ,MAX_iter):
 
         #Paso 17 al 19
         if NORM <= TOL:
+            print(f"\nConvergencia alcanzada en iteración {l} (NORM = {NORM:.2e})\n")
+            print(f"{'x':^10} {'y':^10} {'w (aprox)':^14} {'u (analitica)':^14} {'|error|':^12}")
+            print("-" * 64)
             for i in range(n-1):
                 for j in range(m-1):
-                    print(f"x={x[i]:.4f}, y={y[j]:.4f}, w={w[i][j]:.6f}")
+                    u_exact = u_analitica(x[i], y[j])
+                    error = abs(w[i][j] - u_exact)
+                    print(f"{x[i]:^10.4f} {y[j]:^10.4f} {w[i][j]:^14.6f} {u_exact:^14.6f} {error:^12.2e}")
             return w,x,y #esto es unicamente para graficar luego
         
         l+= 1
@@ -142,22 +147,30 @@ def graficar(a, b, c, d, m, n, TOL, MAX_iter):
     # Solución analítica sobre la malla completa
     U_analitica = u_analitica(X, Y)
 
-    # Graficar
-    fig = plt.figure(figsize=(14, 6))
+    # Graficar en 3D
+    fig = plt.figure(figsize=(20, 6))
 
-    ax1 = fig.add_subplot(121, projection='3d')
+    ax1 = fig.add_subplot(131, projection='3d')
     ax1.plot_surface(X, Y, W_full, cmap=cm.viridis)
     ax1.set_title('Aproximación (Diferencias Finitas)')
     ax1.set_xlabel('x')
     ax1.set_ylabel('y')
     ax1.set_zlabel('w(x,y)')
 
-    ax2 = fig.add_subplot(122, projection='3d')
+    ax2 = fig.add_subplot(132, projection='3d')
     ax2.plot_surface(X, Y, U_analitica, cmap=cm.plasma)
     ax2.set_title('Solución analítica u(x,y) = cos(x)cos(y)')
     ax2.set_xlabel('x')
     ax2.set_ylabel('y')
     ax2.set_zlabel('u(x,y)')
+
+    ax3 = fig.add_subplot(133, projection='3d')
+    ax3.plot_surface(X, Y, W_full, cmap=cm.viridis, alpha=0.6, label='Aprox.')
+    ax3.plot_surface(X, Y, U_analitica, cmap=cm.plasma, alpha=0.6, label='Analítica')
+    ax3.set_title('Comparación: Aprox. vs Analítica')
+    ax3.set_xlabel('x')
+    ax3.set_ylabel('y')
+    ax3.set_zlabel('z')
 
     plt.tight_layout()
     plt.savefig('comparacion_poisson.png', dpi=150, bbox_inches='tight')
